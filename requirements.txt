@@ -1,0 +1,8 @@
+# Data preparation and tests use only the Python standard library.
+# Install these for the exploratory notebook and later model baselines.
+pandas>=2.2,<3
+numpy>=2,<3
+matplotlib>=3.9,<4
+scikit-learn>=1.5,<2
+jupyterlab>=4,<5
+# PyTorch will be installed separately when implementing DKT/SAKT.
