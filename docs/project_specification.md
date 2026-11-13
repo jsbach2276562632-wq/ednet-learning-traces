@@ -39,9 +39,8 @@ Attention plots may help explore SAKT's behavior, but do not establish why a pre
 The first 5,000-student sample has been prepared and checked. The [risk-label analysis](../results/risk_eda.md) and [risk baseline](../results/risk_baseline.md) are available.
 
 1. Extend the data checks to question tags and response times.
-2. Build the next-response baseline, then train DKT and SAKT.
-3. Evaluate held-out bundles, short histories, and calibration.
-4. Collect the figures and write the report.
+2. The [first knowledge tracing run](../results/knowledge_tracing.md) compares DKT and SAKT with historical accuracy on seen and unseen bundles and shorter histories.
+3. Add confidence intervals and calibration plots, then collect the figures for the report.
 
 For now, we will stay with KT1 and these two prediction tasks. Recommendations, generated lessons, and formal dropout prediction would need separate work.
 

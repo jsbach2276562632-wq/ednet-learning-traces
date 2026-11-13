@@ -2,7 +2,7 @@
 
 Can a student's past answers tell us when they are starting to struggle? We use EdNet's English practice logs to predict the next answers and flag low accuracy over the following 20 questions.
 
-The first EdNet run used 5,000 students and produced 653,911 cleaned responses. The [risk-label analysis](results/risk_eda.md) and [baseline comparison](results/risk_baseline.md) cover early risk prediction. DKT-LSTM, SAKT, and the held-out question experiment are planned.
+The first EdNet run used 5,000 students and produced 653,911 cleaned responses. The [risk-label analysis](results/risk_eda.md) and [baseline comparison](results/risk_baseline.md) cover early risk prediction. The [knowledge tracing results](results/knowledge_tracing.md) compare DKT and SAKT on seen and unseen question bundles and with shorter histories.
 
 ## Try it
 
@@ -69,4 +69,4 @@ GitHub-ready files consist of code, documentation, and aggregate results. EdNet 
 - `tests/`: checks for the preparation code.
 - `results/` and `report/`: experiment outputs and the report outline.
 
-The risk baselines use historical accuracy and logistic regression. We plan to train DKT-LSTM and SAKT from scratch. If the course requires a pretraining comparison, we can add the same encoder with and without self-supervised pretraining.
+The risk baselines use historical accuracy and logistic regression. The next-response experiment trains DKT and SAKT from scratch. Its reproduction command and PyTorch setup notes are in the [experiment results](results/knowledge_tracing.md).

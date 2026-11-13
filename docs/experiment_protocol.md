@@ -16,19 +16,21 @@ Make predictions at the start of a solving round. Questions sharing a `solving_i
 
 For risk prediction, select the historical feature columns explicitly. `future_accuracy`, `future_end`, and `risk_label` describe the outcome and cannot go into the model.
 
-## Unseen question bundles — still to implement
+## Unseen question bundles
+
+The first run uses a fixed bundle hash and a shared vocabulary of first tag and TOEIC part pairs built from training bundles. See [results and reproduction](../results/knowledge_tracing.md) for the settings and unknown-feature count.
 
 Hold out whole `bundle_id` groups. Holding out individual questions could leave another question from the same reading passage in training.
 
-Prefer bundles whose tags appear in training, and count unfamiliar tags separately. Remove held-out bundle answers and times from training and validation. For the strict zero-shot test, also leave earlier answers from those bundles out of the test history.
+Exclude held-out bundle responses from training, validation, and all input histories. Count test targets whose tag and part pair did not appear in training.
 
-Compare seen and unseen bundles for the same test students. Report question difficulty and sample counts alongside the scores. Unknown question IDs map to UNK; tags and question modules provide the remaining information.
+Compare seen and unseen bundles for the same test students. The models use tag and part pairs, with a zero embedding for unfamiliar pairs. Report sample counts and note that the bundle groups are not matched by difficulty.
 
 Start this experiment with next-answer prediction. Keep risk labels on their original timeline: removing questions would change what “the next 20 questions” means.
 
 ## Short histories
 
-For the same test targets, try the most recent 5, 10, 20, and 50 questions. Cut at completed-round boundaries and record the actual number available.
+For the same test targets with at least 50 prior answers, try the most recent 5, 10, 20, and 50 answers. All input ends before the target round. The left edge of the window can fall inside an earlier round.
 
 Also check students who naturally have little history. Cutting a long record short does not necessarily recreate their situation.
 
