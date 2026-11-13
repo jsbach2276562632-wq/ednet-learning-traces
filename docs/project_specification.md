@@ -40,7 +40,7 @@ The first 5,000-student sample has been prepared and checked. The [risk-label an
 
 1. Extend the data checks to question tags and response times.
 2. The [first knowledge tracing run](../results/knowledge_tracing.md) compares DKT and SAKT with historical accuracy on seen and unseen bundles and shorter histories.
-3. Add confidence intervals and calibration plots, then collect the figures for the report.
+3. The [next-response results](../results/knowledge_tracing.md#confidence-intervals-and-calibration) include student bootstrap intervals and calibration plots. Collect the remaining figures and write the report.
 
 For now, we will stay with KT1 and these two prediction tasks. Recommendations, generated lessons, and formal dropout prediction would need separate work.
 

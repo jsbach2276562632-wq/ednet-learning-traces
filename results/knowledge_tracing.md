@@ -21,3 +21,21 @@ python scripts/train_knowledge_tracing.py --input work/ednet/interactions.csv --
 ```
 
 The reported run used PyTorch 2.11.0+cu128 and an RTX 4070 Laptop GPU. We selected each checkpoint by validation log loss. This experiment predicts answer correctness. The separate [risk baseline](risk_baseline.md) predicts low accuracy over the next 20 answers.
+
+## Confidence intervals and calibration
+
+We reran the same settings and averaged each model's three predicted probabilities before scoring. The table above averages three separate AUCs, so its values differ slightly. The intervals below use 1,000 bootstrap draws of the 659 test students, with the same draws for seen and unseen bundles. The intervals cover test student sampling for these fitted models and this bundle split.
+
+| Model | Seen AUC (95% CI) | Unseen AUC (95% CI) | Seen minus unseen (95% CI) |
+|---|---|---|---|
+| Historical accuracy | 0.629 (0.581 to 0.659) | 0.624 (0.576 to 0.652) | 0.005 (-0.003 to 0.015) |
+| DKT | 0.658 (0.621 to 0.682) | 0.636 (0.597 to 0.660) | 0.022 (0.016 to 0.033) |
+| SAKT | 0.660 (0.620 to 0.684) | 0.634 (0.594 to 0.660) | 0.025 (0.018 to 0.036) |
+
+Both sequence models lose AUC on unseen bundles in this split. The historical baseline's interval for the difference includes zero. The groups have different questions, so this comparison does not isolate the effect of bundle novelty from other differences in question mix.
+
+![Reliability plots for seen and unseen bundles](kt_diagnostics/calibration.svg)
+
+Each dot compares the mean predicted probability with the fraction of correct answers in a 0.1-wide probability bin. Larger dots represent more examples. DKT and SAKT have lower Brier scores than historical accuracy on both groups. Brier score also reflects discrimination, so see the curves for how the probabilities agree with observed accuracy.
+
+Add `--diagnostics work/ednet/kt_diagnostics` to the command above to reproduce the plots and intervals. The [aggregate diagnostic data](kt_diagnostics/diagnostics.json) include bin counts and Brier scores.

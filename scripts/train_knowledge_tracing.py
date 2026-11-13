@@ -208,6 +208,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, required=True, help="Prepared interactions.csv")
     parser.add_argument("--output", type=Path, required=True, help="New JSON report path")
+    parser.add_argument("--diagnostics", type=Path, help="New folder for bootstrap intervals and calibration plots")
     parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     parser.add_argument("--seeds", nargs="+", type=int, default=[42, 43, 44])
     parser.add_argument("--split-seed", type=int, default=42)
@@ -222,12 +223,15 @@ def main():
         parser.error("Use positive training settings and a width divisible by four")
     if args.output.exists():
         parser.error("Output already exists")
+    if args.diagnostics and args.diagnostics.exists():
+        parser.error("Diagnostics folder already exists")
     torch.set_num_threads(4)
     device = torch.device(args.device)
     arrays, students, tokens, skills, audit = read_interactions(args.input, args.split_seed)
     print({split: len(rows) for split, rows in arrays.items()}, flush=True)
     report = {
-        "config": {key: value for key, value in vars(args).items() if key not in ("input", "output")},
+        "config": {key: value for key, value in vars(args).items()
+                   if key not in ("input", "output", "diagnostics")},
         "torch": torch.__version__,
         "audit": audit,
         "historical_accuracy": evaluate(
@@ -236,6 +240,13 @@ def main():
         ),
         "runs": [],
     }
+    test_splits = ("test_id", "test_ood")
+    predictions = defaultdict(lambda: defaultdict(list))
+    if args.diagnostics:
+        for split in test_splits:
+            predictions["Historical accuracy"][split].append(
+                historical_scores(arrays[split], tokens, args.window, args.batch_size)
+            )
     for seed in args.seeds:
         for name in ("DKT", "SAKT"):
             torch.manual_seed(seed)
@@ -245,8 +256,15 @@ def main():
                 model.questions.weight[1].zero_()
                 model.answers.weight[2:4].zero_()
             epoch, history_log, seconds = train_model(model, arrays, tokens, args, device, seed)
-            results = evaluate(lambda rows, size: predict(model, rows, tokens, size, args, device),
-                               arrays, students, args.window)
+            def scorer(rows, size):
+                scores = predict(model, rows, tokens, size, args, device)
+                if args.diagnostics:
+                    for split in test_splits:
+                        if rows is arrays[split] and size == args.window:
+                            predictions[name][split].append(scores)
+                return scores
+
+            results = evaluate(scorer, arrays, students, args.window)
             report["runs"].append({
                 "model": name, "seed": seed, "best_epoch": epoch,
                 "parameters": sum(p.numel() for p in model.parameters()),
@@ -258,6 +276,10 @@ def main():
     with args.output.open("x", encoding="utf-8") as handle:
         json.dump(report, handle, indent=2)
         handle.write("\n")
+    if args.diagnostics:
+        from knowledge_tracing_diagnostics import write_diagnostics
+
+        write_diagnostics(arrays, students, predictions, args.diagnostics)
 
 
 if __name__ == "__main__":
