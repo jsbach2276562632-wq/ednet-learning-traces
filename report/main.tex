@@ -1,0 +1,94 @@
+\documentclass[10pt,a4paper,twocolumn]{article}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern,microtype,booktabs,graphicx,xcolor,caption,fancyhdr}
+\usepackage[margin=1.9cm,columnsep=.75cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\definecolor{accent}{HTML}{1F4E79}
+\definecolor{abstractbg}{HTML}{EAF2F8}
+\captionsetup{font=small,labelfont={bf,color=accent}}
+\setlength{\headheight}{14pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\renewcommand{\topfraction}{.92}
+\renewcommand{\dbltopfraction}{.92}
+\renewcommand{\textfraction}{.07}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\footnotesize\color{accent}Student Knowledge Tracing on EdNet}
+\fancyhead[R]{\footnotesize\color{accent}\thepage}
+\begin{document}
+\twocolumn[{
+\begin{center}
+{\LARGE\bfseries Student Knowledge Tracing on EdNet\par}
+{\large Next-answer prediction and early low-accuracy alerts\par}
+\smallskip
+{\small DLSS Project Report}
+\end{center}
+\noindent\colorbox{abstractbg}{\begin{minipage}{\dimexpr\textwidth-2\fboxsep\relax}
+\small\textbf{Abstract.} We study next-answer prediction and early learning-risk alerts using 653,911 cleaned responses from 5,000 EdNet learners. DKT and SAKT improve on historical accuracy for seen question bundles, but their advantage narrows on unseen bundles. For early alerts, at a budget of 50 reviews, logistic regression reaches 14 of 24 low-accuracy cases and historical error rate reaches 13.
+\end{minipage}}
+\vspace{9pt}
+}]
+We asked two questions about English practice logs. Can we predict whether a student will answer a new question correctly? And after about 20 answers, can we identify students who will get fewer than 40\% of their next 20 questions right?
+
+\section{Data}
+
+We selected 5,000 students from EdNet-KT1 using seed 42. We joined their answers to the question table and retained 653,911 of 654,035 responses. The removed rows included 112 invalid answers and 12 duplicates. We split by student into 3,512 training, 495 validation, and 993 test students. Every prediction uses answers available before its cutoff. In particular, questions from the same solving round share one cutoff.
+
+\begin{center}
+\includegraphics[width=\columnwidth]{calibration.pdf}
+\captionof{figure}{Calibration on seen and unseen question bundles.}
+\end{center}
+
+\newpage
+\section{Predicting the next answer}
+
+We compared smoothed historical accuracy with DKT and SAKT using up to 50 past answers. Both learned models used the first skill tag and the TOEIC part. We held out roughly one fifth of question bundles by a fixed hash and excluded their responses from training, validation, and input histories. The test comparison covered the same 659 students, with 119,423 seen-bundle and 29,727 unseen-bundle targets.
+
+\begin{center}
+\captionof{table}{Test ROC-AUC and paired 95\% intervals for the drop.}
+\small\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}lrrl@{}}
+\toprule
+Model & Seen & Unseen & Drop (95\% CI) \\
+\midrule
+Historical accuracy & 0.629 & 0.624 & 0.005 (-0.003 to 0.015) \\
+DKT & 0.658 & 0.636 & 0.022 (0.016 to 0.033) \\
+SAKT & 0.660 & 0.634 & 0.025 (0.018 to 0.036) \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+For DKT and SAKT, we averaged predicted probabilities across three training seeds before scoring. The intervals come from 1,000 paired bootstrap draws of the test students. Both sequence models ranked answers better on seen bundles, and their advantage narrowed on unseen bundles. The bundle groups differ in question mix, so the drop cannot be attributed to novelty alone.
+
+On a fixed set of seen-bundle targets with at least 50 prior answers, cutting the available history to five lowered mean per-seed AUC from 0.645 to 0.609 for DKT and from 0.644 to 0.600 for SAKT. The calibration plots show how predicted probabilities compare with observed accuracy. \href{https://github.com/jsbach2276562632-wq/ednet-learning-traces/blob/main/results/knowledge_tracing.md}{Training details and calibration}
+
+\clearpage
+\section{Early low-accuracy alerts}
+
+We make one prediction at the first completed round after at least 20 answers. The label records whether accuracy on the next 20 answers is below 40\%. Only 1,277 of the 5,000 students had both windows. In the training split, students who reached the cutoff but lacked enough follow-up averaged 45.9\% at the cutoff, compared with 52.1\% for those with complete outcomes. The risk evaluation therefore covers a selected group of students. \href{https://github.com/jsbach2276562632-wq/ednet-learning-traces/blob/main/results/risk_eda.md}{Label coverage and threshold sensitivity}
+
+In the 247 labeled test students, 24 met the risk definition. Historical error rate had higher average precision than logistic regression (0.379 vs. 0.349). At thresholds selected separately on validation, logistic regression found 20 cases with 98 alerts, compared with 13 cases and 50 alerts for historical error rate.
+
+The figure compares the rankings at equal review budgets. With 50 slots, logistic regression reached 14 cases and historical error rate reached 13. With 100 slots both reached 20. The fractional counts at some budgets average over students tied at the cutoff. The dashed line shows expected coverage from random review.
+
+\begin{center}
+\includegraphics[width=\columnwidth]{../results/risk_review_budget.png}
+\captionof{figure}{Low-accuracy cases reached at equal review budgets.}
+\end{center}
+
+\newpage
+\section{What the results support}
+
+The sequence models improved next-answer ranking on this sample, especially on familiar bundles. For early alerts, the simple historical score remained competitive at the same review budget. The risk results come from only 24 positive test cases and omit students whose follow-up is missing. The platform also chooses the next questions, so low accuracy may reflect question difficulty as well as the student's learning. The logs cannot tell us whether contacting a flagged student would improve their outcomes.
+
+Start with the \href{https://github.com/jsbach2276562632-wq/ednet-learning-traces/blob/main/README.md}{README} to reproduce the sample, splits, and analyses.
+
+\section*{References}
+\small
+[1] Choi et al. \href{https://arxiv.org/abs/1912.03072}{EdNet: A Large-Scale Hierarchical Dataset in Education}. AIED, 2020.
+
+[2] Piech et al. \href{https://proceedings.neurips.cc/paper/2015/hash/bac9162b47c56fc8a4d2a519803d51b3-Abstract.html}{Deep Knowledge Tracing}. NeurIPS, 2015.
+
+[3] Pandey and Karypis. \href{https://arxiv.org/abs/1907.06837}{A Self-Attentive Model for Knowledge Tracing}. EDM, 2019.
+\end{document}
