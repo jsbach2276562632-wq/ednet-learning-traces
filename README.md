@@ -1,5 +1,7 @@
 # Student Knowledge Tracing
 
+The [project report](report/report.md) brings together the next-answer and early risk experiments.
+
 Can a student's past answers tell us when they are starting to struggle? We use EdNet's English practice logs to predict the next answers and flag low accuracy over the following 20 questions.
 
 The first EdNet run used 5,000 students and produced 653,911 cleaned responses. The [risk-label analysis](results/risk_eda.md) and [baseline comparison](results/risk_baseline.md) cover early risk prediction. The [knowledge tracing results](results/knowledge_tracing.md) compare DKT and SAKT on seen and unseen question bundles and with shorter histories.

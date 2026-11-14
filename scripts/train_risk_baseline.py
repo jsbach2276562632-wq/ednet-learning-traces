@@ -23,7 +23,16 @@ FEATURES = (
 SPLITS = ("train", "val", "test_id")
 
 
-def evaluate(path):
+def budget_curve(labels, scores):
+    """Expected cases reached at each budget under uniform tie-breaking."""
+    order = np.argsort(-scores, kind="stable")
+    starts = np.r_[0, np.flatnonzero(np.diff(scores[order])) + 1]
+    sizes = np.diff(np.r_[starts, len(labels)])
+    positive_rates = np.add.reduceat(labels[order], starts) / sizes
+    return np.r_[0., np.cumsum(np.repeat(positive_rates, sizes))]
+
+
+def evaluate(path, budget_curves=None):
     with path.open(encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))
     if len({row["student_id"] for row in rows}) != len(rows):
@@ -55,6 +64,8 @@ def evaluate(path):
         for split in ("val", "test_id"):
             features, labels = data[split]
             scores = score(features)
+            if budget_curves is not None and split == "test_id":
+                budget_curves[name] = budget_curve(labels, scores)
             alerts = scores >= threshold
             results.append({
                 "model": name,
@@ -83,8 +94,34 @@ def evaluate(path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, default=Path("work/ednet"))
+    parser.add_argument("--budget-plot", type=Path, help="Save the test-set budget comparison")
     args = parser.parse_args()
-    report = evaluate(args.input / "risk_examples.csv")
+    curves = {} if args.budget_plot else None
+    report = evaluate(args.input / "risk_examples.csv", curves)
+    if curves is not None:
+        from matplotlib import pyplot as plt
+
+        test = next(row for row in report["results"] if row["split"] == "test_id")
+        n, positives = test["students"], test["positives"]
+        budgets = [k for k in (10, 25, 50, 100) if k <= n]
+        fig, ax = plt.subplots(figsize=(6.5, 3.8), layout="constrained")
+        ax.plot([0, n], [0, positives], "--", color="0.5", label="Random review")
+        names = ("Historical error rate", "Logistic regression")
+        report["test_budget"] = {}
+        for (name, curve), label in zip(curves.items(), names):
+            ax.plot(curve, label=label)
+            report["test_budget"][name] = [
+                {"slots": k, "expected_cases": float(curve[k]),
+                 "precision": float(curve[k] / k), "recall": float(curve[k] / positives)}
+                for k in budgets
+            ]
+        ax.set(xlabel="Students reviewed", ylabel="Low-accuracy cases reached",
+               xlim=(0, n), ylim=(0, positives + 1))
+        ax.grid(alpha=0.2)
+        ax.legend()
+        args.budget_plot.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(args.budget_plot, dpi=160)
+        plt.close(fig)
     summary = json.loads((args.input / "summary.json").read_text(encoding="utf-8"))
     report["data_config"] = summary["config"]
     print(json.dumps(report, indent=2))

@@ -18,3 +18,5 @@ On the test set, the historical score had higher average precision. Logistic reg
 This comparison covers students with enough follow-up answers. See the [label coverage analysis](risk_eda.md) for the students left out.
 
 Run `python scripts/train_risk_baseline.py --input work/ednet` to reproduce the table. This run used Python 3.13.7 and scikit-learn 1.9.1.
+
+Add `--budget-plot work/ednet/risk_review_budget.png` to compare the two rankings at equal review budgets. With 50 slots, historical error rate reaches 13 of the 24 cases and logistic regression reaches 14. With 100 slots both reach 20. At a tie, we use the expected count from randomly choosing among students with the same score. [Review budget plot](risk_review_budget.png)
